@@ -32,6 +32,7 @@ SOBJS	:= lowlevel_init.o
 
 COBJS	:= clock.o
 COBJS	+= dmc.o
+COBJS   += smc.o
 
 ifdef CONFIG_PMIC
 COBJS	+= pmic.o
@@ -40,7 +41,7 @@ endif
 ifndef CONFIG_SPL_BUILD
 COBJS	+= origen_quad.o
 else
-COBJS	+= boot.o
+COBJS	+= mmc_boot.o
 endif
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)

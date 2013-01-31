@@ -49,7 +49,41 @@
 #define CONFIG_EXYNOS4212       1
 #define CONFIG_EXYNOS4412_EVT1  1
 
+#define CONFIG_TRUSTZONE
+#define CONFIG_TRUSTZONE_RESERVED_DRAM	0x100000
+#define CONFIG_PHY_IRAM_BASE		(0x02020000)
+#define CONFIG_PHY_IRAM_NS_BASE		(CONFIG_PHY_IRAM_BASE + 0x2F000)
+
+/* Configuration of secure boot */
+#define CONFIG_TZSW_SECURE_BOOT
+
 #include <asm/arch/cpu.h>		/* get chip and board defs */
+
+/* Offset for OM status registers */
+#define OM_STATUS_OFFSET	0x0
+
+/* Offset for inform registers */
+#define INFORM0_OFFSET		0x800
+#define INFORM1_OFFSET		0x804
+#define INFORM2_OFFSET		0x808
+#define INFORM3_OFFSET		0x80C
+
+/* Boot configuration */
+#define BOOT_ONENAND		0x1
+#define BOOT_NAND		0x40000
+#define BOOT_MMCSD		0x3
+#define BOOT_NOR		0x4
+#define BOOT_SEC_DEV		0x5
+#define BOOT_EMMC		0x6
+#define BOOT_EMMC_4_4		0x7
+#define BOOT_USB		0x8
+
+/* Boot device */
+#define SDMMC_CH2		0x0
+#define SDMMC_CH0		0x4
+#define EMMC			0x10
+#define EMMC_4_4		0x14
+#define USB			0x40
 
 /*
  * Clock / PLL
@@ -70,7 +104,7 @@
 #define CONFIG_SYS_LOAD_ADDR		CONFIG_SYS_TEXT_BASE
 #define CONFIG_SYS_INIT_SP_ADDR		(CONFIG_SYS_LOAD_ADDR - GENERATED_GBL_DATA_SIZE)
 /* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 1 << 20UL)
+#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + (1 << 20))
 /* Cache */
 #define CONFIG_SYS_DCACHE_OFF		/* Keep L2 Cache Disabled */
 /* DRAM */
@@ -130,9 +164,9 @@
 #define CONFIG_SECURE_BL1_ONLY
 #define CONFIG_SPL
 #define	CONFIG_MBR_SIZE			(512)
-#define	CONFIG_SBL_SIZE			(8UL << 10)	/* 8KB */
+#define	CONFIG_SBL_SIZE			(16UL << 10)	/* 16KB */
 #define	CONFIG_BL1_SIZE			(16UL << 10) /* 16KB */
-#define	CONFIG_BL2_SIZE			(512UL << 10) /* 512KB */
+#define	CONFIG_BL2_SIZE			(768UL << 10) /* 768KB */
 
 /*
  * Console
@@ -188,6 +222,10 @@
 #define CONFIG_OF_LIBFDT
 /* Boot Argument Buffer Size */
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
+
+/* Base address for secondary boot information */
+#define CONFIG_SECONDARY_BOOT_INFORM_BASE	(CONFIG_SYS_TEXT_BASE - 0x8)
+
 /* USB Options */
 #define CONFIG_CMD_USB
 #ifdef	CONFIG_CMD_USB

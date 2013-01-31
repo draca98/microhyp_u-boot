@@ -326,6 +326,10 @@ void board_init_f(ulong bootflag)
 
 	addr = CONFIG_SYS_SDRAM_BASE + gd->ram_size;
 
+#if defined(CONFIG_TRUSTZONE_RESERVED_DRAM)
+        addr -= CONFIG_TRUSTZONE_RESERVED_DRAM;
+#endif
+
 #ifdef CONFIG_LOGBUFFER
 #ifndef CONFIG_ALT_LB_ADDR
 	/* reserve kernel log buffer */

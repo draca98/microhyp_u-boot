@@ -39,6 +39,8 @@ lowlevel_init:
 	ldr	sp, =0x02060000
 	stmdb	r13!, {ip,lr}
 
+	bl      relocate_nscode
+
 	/* check reset status */
 	ldr	r0, =(EXYNOS4_POWER_BASE + 0x800) /* INFORM1 */
 	ldr	r1, [r0]
@@ -85,16 +87,12 @@ lowlevel_init:
 	/* DMC initialize */
 	bl	mem_ctrl_init_2nd
 
-	/* Trust zone initialize */
-	bl	tzpc_init
-
 1:
 	ldmia	r13!, {ip,pc}
 
 wakeup_reset:
 	bl	clock_ctrl_init
 	bl	mem_ctrl_init
-	bl	tzpc_init
 
 exit_wakeup:
 	/* Load return address and jump to kernel */
@@ -108,51 +106,55 @@ exit_wakeup:
 	nop
 	nop
 
-/*
- * Setting TZPC[TrustZone Protection Controller]
- */
-tzpc_init:
 
-	ldr	r0, =TZPC0_BASE
-	mov	r1, #0x0
-	str	r1, [r0]
-	mov	r1, #0xff
-	str	r1, [r0, #TZPC_DECPROT0SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT1SET_OFFSET]
-	mov	r1, #0xbd
-	str	r1, [r0, #TZPC_DECPROT2SET_OFFSET]
-	mov	r1, #0xff
-	str	r1, [r0, #TZPC_DECPROT3SET_OFFSET]
+relocate_nscode:
+	adr	r0, nscode_base			@ r0: source address (start)
+	adr	r1, nscode_end			@ r1: source address (end)
+	ldr	r2, =CONFIG_PHY_IRAM_NS_BASE	@ r2: target address
 
-	ldr	r0, =TZPC1_BASE
-	str	r1, [r0, #TZPC_DECPROT0SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT1SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT2SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT3SET_OFFSET]
+1:
+	ldmia	r0!, {r3-r6}
+	stmia	r2!, {r3-r6}
+	cmp	r0, r1
+	blt	1b
 
-	ldr	r0, =TZPC2_BASE
-	str	r1, [r0, #TZPC_DECPROT0SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT1SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT2SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT3SET_OFFSET] 
-
-	ldr	r0, =TZPC3_BASE
-	str	r1, [r0, #TZPC_DECPROT0SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT1SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT2SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT3SET_OFFSET]
-
-	ldr	r0, =TZPC4_BASE
-	str	r1, [r0, #TZPC_DECPROT0SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT1SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT2SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT3SET_OFFSET]
-
-	ldr	r0, =TZPC5_BASE
-	str	r1, [r0, #TZPC_DECPROT0SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT1SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT2SET_OFFSET]
-	str	r1, [r0, #TZPC_DECPROT3SET_OFFSET]
+	dsb
+	isb
 
 	mov	pc, lr
 
+
+	.align	4
+nscode_base:
+	adr	r0, _ns_reg5
+	b	1f
+
+	.word	0x0		@ REG0: RESUME_ADDR
+	.word	0x0		@ REG1: RESUME_FLAG
+	.word	0x0		@ REG2
+	.word	0x0		@ REG3
+	.word	0x0		@ REG4
+_ns_reg5:
+	.word	0x0		@ REG5: CPU1_BOOT_REG
+	.word	0x0		@ REG6: REG_DIRECTGO_FLAG
+	.word	0x0		@ REG7: REG_DIRECTGO_ADDR
+	.word	0x0		@ REG8
+	.word	0x0		@ REG9
+
+	nop
+	nop
+
+1:
+#if defined(CONFIG_EXYNOS4412)
+	mrc	p15, 0, r1, c0, c0, 5	@ MPIDR
+	and	r1, r1, #0x3
+	add	r0, r0, r1, lsl #0x2
+#endif
+cpu1_wait:
+	.word	0xE320F002		@ wfe instruction
+	ldr	r1, [r0]
+	cmp	r1, #0x0
+	bxne	r1
+	b	cpu1_wait
+	nop
+nscode_end:
