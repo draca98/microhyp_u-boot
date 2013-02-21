@@ -235,4 +235,5 @@
 #endif
 #define CONFIG_OF_LIBFDT
 
+#define CONFIG_MISC_INIT_R
 #endif

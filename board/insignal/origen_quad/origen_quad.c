@@ -28,6 +28,8 @@
 #include <asm/io.h>
 #include <netdev.h>
 #include <asm/arch/cpu.h>
+#include <asm/arch/clock.h>
+#include <asm/arch/cpu.h>
 #include <asm/arch/gpio.h>
 #include <asm/arch/mmc.h>
 #include <asm/arch/pinmux.h>
@@ -141,6 +143,19 @@ static int board_uart_init(void)
 				PERIPH_ID_UART - PERIPH_ID_UART0);
 	return err;
 }
+
+int misc_init_r(void)
+{
+	struct exynos4412_clock *clk = (struct exynos4412_clock *)EXYNOS4_CLOCK_BASE;
+	writel(0x11116666, &clk->src_cam0);
+	writel(0x00001116, &clk->src_lcd0);
+	writel(0x00004444, &clk->div_cam0);
+	writel(0x00000003, &clk->div_mfc);
+	writel(0x00000001, &clk->div_g3d);
+	writel(0x00700004, &clk->div_lcd);
+	return 0;
+}
+
 
 #ifdef CONFIG_BOARD_EARLY_INIT_F
 int board_early_init_f(void)
