@@ -26,6 +26,12 @@ LIB	= $(obj)lib$(BOARD).o
 
 SOBJS	:= lowlevel_init.o
 SOBJS	+= monitor.o
+#ifndef CONFIG_SPL_BUILD
+# hypervisor
+SOBJS	+= hyp.o
+SOBJS	+= hyp_traps.o
+SOBJS	+= lpae.o
+#endif
 
 COBJS	:= clock_init.o
 COBJS	+= timer_init.o non_secure.o

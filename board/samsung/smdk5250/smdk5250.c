@@ -282,4 +282,7 @@ void arch_preboot_os(void)
 	 * Without further ado...
 	 */
 	enter_hyp();
+#ifndef CONFIG_SPL_BUILD
+	hyp_init();
+#endif
 }
