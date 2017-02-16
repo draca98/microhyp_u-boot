@@ -398,6 +398,9 @@ union hsr {
 		
 struct cpu_user_regs
 {
+	uint32_t spsr;
+	uint32_t elr;
+	uint32_t lr;
 	uint32_t r0;
 	uint32_t r1;
 	uint32_t r2;

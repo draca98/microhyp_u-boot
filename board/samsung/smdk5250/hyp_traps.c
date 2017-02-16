@@ -1,10 +1,16 @@
 #include "hyp.h"
+#include "lpae.h"
+
+void advance_pc(struct cpu_user_regs *regs)
+{
+	regs->elr += 4;
+}
 
 static void do_cp15_32(struct cpu_user_regs *regs, const union hsr hsr)
 {
 	const struct hsr_cp32 cp32 = hsr.cp32;
 	int regidx = cp32.reg;
-	uint32_t *r = (uint32_t *)regs + regidx;
+	uint32_t *r = (uint32_t *)&regs->r0 + regidx;
 
 #ifndef CONFIG_SPL_BUILD
 //	printf("hsr.bits=%x\n", hsr.bits & HSR_CP32_REGS_MASK);
@@ -60,6 +66,46 @@ static void do_cp15_32(struct cpu_user_regs *regs, const union hsr hsr)
 		TVM_EMUL(regs, hsr, *r, CONTEXTIDR);
 		break;
 	}
+
+	advance_pc(regs);
+}
+
+void hvc_set_exec(uint32_t pa, int32_t size)
+{
+	set_protect_area(pa, size, PERM_RX);
+	p2m_addr_set_perm(pa, size, PERM_RX);
+}
+
+void hvc_set_ro(uint32_t pa, int32_t size)
+{
+	set_protect_area(pa, size, PERM_RO);
+	p2m_addr_set_perm(pa, size, PERM_RO);
+}
+
+void hvc_enable_protect(void)
+{
+	init_unprotect_area();
+}
+
+static void do_hvc32(struct cpu_user_regs *regs, const union hsr hsr)
+{
+	switch (hsr.iss) {
+	case 0:
+		/* reserved */
+		break;
+	case 1:
+		/* set kernel exec memory */
+		hvc_set_exec(regs->r0, regs->r1);
+		break;
+	case 2:
+		/* set kernel ro memory */
+		hvc_set_ro(regs->r0, regs->r1);
+		break;
+	case 3:
+		/* enable stage 2 protection */
+		hvc_enable_protect();
+		break;
+	}
 }
 
 void do_trap_hyp(struct cpu_user_regs *regs)
@@ -70,6 +116,11 @@ void do_trap_hyp(struct cpu_user_regs *regs)
 	case HSR_EC_CP15_32:
 		do_cp15_32(regs, hsr);
 		break;
+	case HSR_EC_HVC32:
+		do_hvc32(regs, hsr);
+		break;
+	default:
+		advance_pc(regs);
+		break;
 	}
 }
-

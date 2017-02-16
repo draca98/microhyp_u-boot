@@ -95,6 +95,12 @@ typedef union {
 typedef u32 vaddr_t;
 typedef u64 paddr_t;
 
+typedef enum {
+	PERM_RO = 0,
+	PERM_RX = 1,
+	PERM_RW = 2,
+} p2m_perm_t;
+
 #define ATTR_IDX_UNCACHED      0x0
 #define ATTR_IDX_BUFFERABLE    0x1
 #define ATTR_IDX_WRITETHROUGH  0x2
@@ -122,3 +128,6 @@ typedef u64 paddr_t;
 #define LPAE_SH_OUTER         0x2
 #define LPAE_SH_INNER         0x3
 
+void p2m_addr_set_perm(uint64_t addr, int32_t size, p2m_perm_t perm);
+void set_protect_area(uint32_t addr, int32_t size, p2m_perm_t perm);
+void init_unprotect_area(void);

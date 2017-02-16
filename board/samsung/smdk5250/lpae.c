@@ -27,6 +27,19 @@
 #define VTTBR_BADDR_MASK                                0x000000FFFFFFF000ULL
 #define VTTBR_BADDR_SHIFT                               12
 
+#define MAX_PROT_AREA 10
+
+struct mem_sect {
+	uint32_t addr;
+	int32_t size;
+	p2m_perm_t perm;
+};
+
+int prot_area_num = 0;
+
+/* kernel code/ro area map */
+static struct mem_sect prot_area[MAX_PROT_AREA] = {0};
+
 static lpae_t __pgtable_l1[L1_PTE_NUM] \
 		__attribute((__aligned__(4096)));
 
@@ -126,6 +139,67 @@ lpae_t p2m_l3_block(uint64_t pa)
 	return e;
 }
 
+void p2m_set_perm(lpae_t *pte, p2m_perm_t perm)
+{
+	pte->p2m.read = 1;
+	if (perm == PERM_RO) {
+		pte->p2m.xn = 1;
+		pte->p2m.write = 0;
+	} else if (perm == PERM_RX) {
+		pte->p2m.xn = 0;
+		pte->p2m.write = 0;
+	} else  if (perm == PERM_RW) {
+		pte->p2m.xn = 1;
+		pte->p2m.write = 1;
+	}
+}
+
+void p2m_addr_set_perm(uint64_t addr, int32_t size, p2m_perm_t perm)
+{
+	int l2_index, l3_index;
+
+	if (addr < 0x40000000 || addr >= 0xc0000000) {
+		/* invalid address */
+		return;
+	}
+
+	l2_index = (addr - 0x40000000) >> 21;
+	l3_index = ((addr - 0x40000000) & 0x1fffff) >> 12;
+
+	while (size > 0) {
+		lpae_t *pte = &__pgtable_l3[l2_index][l3_index];
+		p2m_set_perm(pte, perm);
+		size -= 4096;
+		l3_index++;
+
+		if (l3_index == 512) {
+			l2_index++;
+			l3_index = 0;
+		}
+	}
+}
+
+void set_protect_area(uint32_t addr, int32_t size, p2m_perm_t perm)
+{
+	struct mem_sect *prot;
+
+	if (prot_area_num >= MAX_PROT_AREA) {
+		/* unable add prot area */
+		return;
+	}
+
+	prot = &prot_area[prot_area_num];
+	prot->addr = addr;
+	prot->size = size;
+	prot->perm = perm;
+	prot_area_num++;
+}
+
+void init_unprotect_area(void)
+{
+
+}
+
 void guest_mmu_init(void)
 {
 	uint32_t vtcr, hcr;
@@ -172,7 +246,6 @@ void hyp_mmu_init(void)
 		}
 	}
 
-	//pa += 0x40000000ULL;
 	__pgtable_l1[2] = p2m_l1_table((uint32_t)&__pgtable_l2[512]);
 	for (i = 512; i < 1024; i++) {
 		__pgtable_l2[i] = p2m_l2_table((uint32_t)&__pgtable_l3[i][0]);

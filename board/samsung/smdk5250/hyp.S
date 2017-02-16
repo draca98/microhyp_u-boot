@@ -31,12 +31,11 @@ trap_hyp:
 	mrs r1, elr_hyp
 	push {r0, r1, lr}
 
-	add r0, sp, #0xc /* pointer user_regs to r0-r12 */
+	mov r0, sp
 	bl do_trap_hyp
 
 	pop {r0, r1, lr}
 	msr spsr_hyp, r0
-	add r1, 4
 	msr elr_hyp, r1
 	pop {r0-r12}
 	eret
