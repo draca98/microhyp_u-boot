@@ -179,6 +179,24 @@ void p2m_addr_set_perm(uint64_t addr, int32_t size, p2m_perm_t perm)
 	}
 }
 
+int is_protect_area(uint32_t addr)
+{
+	int ret = 0;
+	int i = 0;
+	struct mem_sect *prot;
+
+	for (i = 0; i < prot_area_num; i++) {
+		prot = &prot_area[i];
+
+		if ((addr >= prot->addr) &&
+				(addr < (prot->addr + prot->size))) {
+			return 1;
+		}
+	}
+
+	return ret;
+}
+
 void set_protect_area(uint32_t addr, int32_t size, p2m_perm_t perm)
 {
 	struct mem_sect *prot;
