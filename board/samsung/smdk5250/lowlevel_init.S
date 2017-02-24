@@ -44,7 +44,7 @@ lowlevel_init:
 	bl	non_secure_init
 	bl	monitor_init
 	bl	enter_ns
-	//bl	enter_hyp  // leave second core svc mode
+	bl	enter_hyp
 	b	enter_smp_pen
 
 	/*
