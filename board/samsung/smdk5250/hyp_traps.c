@@ -20,6 +20,9 @@
 #define PAGE_SIZE 4096UL
 #define PAGE_MASK (~(PAGE_SIZE-1))
 
+static unsigned long nr_hyp_pgtraps = 0;
+static unsigned long nr_hyp_ctraps = 0;
+
 void advance_pc(struct cpu_user_regs *regs)
 {
 	regs->elr += 4;
@@ -100,7 +103,7 @@ void hvc_set_exec(uint32_t pa, int32_t size)
 	p2m_addr_set_perm(pa, size, PERM_RX);
 
 	/* TODO: Hard coding address */
-	p2m_addr_set_perm(0x405cc000, 0x7fa34000, PERM_RW);
+	p2m_addr_set_perm(0x4053a000, 0x7fa34000, PERM_RW);
 }
 
 void hvc_set_ro(uint32_t pa, int32_t size)
@@ -231,15 +234,18 @@ void do_trap_hyp(struct cpu_user_regs *regs)
 
 	switch (hsr.ec) {
 	case HSR_EC_CP15_32:
+		nr_hyp_ctraps++;
 		do_cp15_32(regs, hsr);
 		break;
 	case HSR_EC_HVC32:
 		do_hvc32(regs, hsr);
 		break;
 	case HSR_EC_DATA_ABORT_LOWER_EL:
+		nr_hyp_pgtraps++;
 		do_data_abort_guest(regs, hsr);
 		break;
 	case HSR_EC_INSTR_ABORT_LOWER_EL:
+		nr_hyp_pgtraps++;
 		do_instr_abort_guest(regs, hsr);
 		break;
 	default:
